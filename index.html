@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Scoring Method</title>
+<style>
+  :root {
+    --green: #2D5016;
+    --green-mid: #3B6B1F;
+    --green-light: #5A9B2E;
+    --green-pale: #EAF3DE;
+    --green-pale2: #C8E6A0;
+    --red: #A32D2D;
+    --red-pale: #FCEBEB;
+    --amber: #BA7517;
+    --amber-pale: #FAEEDA;
+    --gray: #F5F4F0;
+    --gray2: #E8E6E0;
+    --gray3: #B0ADA4;
+    --text: #1A1A18;
+    --text2: #5A5A56;
+    --text3: #9A9A94;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.06);
+    --white: #FFFFFF;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: var(--gray); font-family: 'Georgia', serif; color: var(--text); }
+  
+  /* Layout */
+  #app { display: flex; flex-direction: column; height: 100%; max-width: 480px; margin: 0 auto; background: var(--white); }
+  #screen { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 80px; }
+  
+  /* Nav */
+  #nav { display: flex; border-top: 0.5px solid var(--border); background: var(--white); padding: 0; flex-shrink: 0; }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 4px 14px; gap: 4px; cursor: pointer; border: none; background: none; color: var(--text3); font-size: 10px; font-family: 'Georgia', serif; letter-spacing: 0.05em; transition: color 0.15s; }
+  .nav-btn.active { color: var(--green); }
+  .nav-icon { width: 22px; height: 22px; }
+
+  /* Header */
+  .screen-header { padding: 20px 20px 12px; border-bottom: 0.5px solid var(--border2); }
+  .screen-title { font-size: 22px; font-weight: normal; color: var(--text); letter-spacing: -0.5px; }
+  .screen-sub { font-size: 12px; color: var(--text3); margin-top: 2px; letter-spacing: 0.04em; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-family: 'Georgia', serif; font-size: 14px; transition: opacity 0.15s, transform 0.1s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--green); color: var(--white); }
+  .btn-secondary { background: var(--gray); color: var(--text2); }
+  .btn-danger { background: var(--red-pale); color: var(--red); }
+  .btn-sm { padding: 7px 12px; font-size: 12px; }
+  .btn-full { width: 100%; }
+
+  /* Cards */
+  .card { background: var(--white); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .card + .card { margin-top: 8px; }
+
+  /* Form elements */
+  .field-label { font-size: 11px; color: var(--text3); letter-spacing: 0.06em; margin-bottom: 6px; }
+  select, input[type=text], input[type=date] {
+    width: 100%; padding: 10px 12px; border: 0.5px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--gray); color: var(--text); font-family: 'Georgia', serif; font-size: 14px;
+    -webkit-appearance: none; appearance: none;
+  }
+  select:focus, input:focus { outline: none; border-color: var(--green-light); }
+
+  /* Seg control */
+  .seg { display: flex; background: var(--gray); border-radius: var(--radius-sm); padding: 3px; gap: 2px; }
+  .seg-btn { flex: 1; padding: 7px 4px; border: none; border-radius: 6px; background: none; font-family: 'Georgia', serif; font-size: 12px; color: var(--text3); cursor: pointer; transition: all 0.15s; }
+  .seg-btn.active { background: var(--white); color: var(--text); box-shadow: var(--shadow); }
+
+  /* Stepper */
+  .stepper { display: flex; align-items: center; gap: 8px; }
+  .step-btn { width: 32px; height: 32px; border-radius: 50%; border: 0.5px solid var(--border); background: var(--gray); color: var(--text); font-size: 18px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.1s; }
+  .step-btn:active { background: var(--gray2); }
+  .step-val { font-size: 16px; min-width: 24px; text-align: center; color: var(--text); }
+
+  /* Check toggle */
+  .check-toggle { display: flex; gap: 6px; }
+  .check-opt { flex: 1; padding: 8px 4px; border: 0.5px solid var(--border); border-radius: var(--radius-sm); background: var(--gray); font-size: 15px; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .check-opt.yes { background: var(--green-pale); border-color: var(--green-light); }
+  .check-opt.no { background: var(--red-pale); border-color: var(--red); }
+
+  /* Rule break tags */
+  .rule-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .rule-tag { padding: 5px 10px; border-radius: 20px; border: 0.5px solid var(--border); background: var(--gray); font-size: 11px; color: var(--text2); cursor: pointer; transition: all 0.15s; letter-spacing: 0.02em; }
+  .rule-tag.active { background: var(--amber-pale); border-color: var(--amber); color: var(--amber); }
+
+  /* Hole card */
+  .hole-card { margin: 8px 12px; border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .hole-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--gray); cursor: pointer; }
+  .hole-num-label { font-size: 13px; font-weight: normal; color: var(--text); }
+  .hole-score-badge { font-size: 18px; color: var(--text); min-width: 30px; text-align: right; }
+  .hole-checks { display: flex; gap: 4px; }
+  .mini-check { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+  .mini-check.yes { background: var(--green-pale); color: var(--green); }
+  .mini-check.no { background: var(--red-pale); color: var(--red); }
+  .mini-check.none { background: var(--gray2); color: var(--text3); }
+  .hole-body { padding: 12px 14px; border-top: 0.5px solid var(--border2); display: none; }
+  .hole-body.open { display: block; }
+  .row-label { font-size: 12px; color: var(--text3); letter-spacing: 0.03em; margin-bottom: 6px; }
+  .row-group { margin-bottom: 14px; }
+  .row-group:last-child { margin-bottom: 0; }
+  .divider-line { height: 0.5px; background: var(--border2); margin: 12px 0; }
+
+  /* Par selector */
+  .par-sel { display: flex; gap: 6px; }
+  .par-opt { width: 36px; height: 32px; border: 0.5px solid var(--border); border-radius: var(--radius-sm); background: var(--gray); font-size: 13px; color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .par-opt.active { background: var(--green); border-color: var(--green); color: var(--white); }
+
+  /* Summary bar */
+  .summary-bar { margin: 8px 12px; padding: 12px 14px; background: var(--green); border-radius: var(--radius); color: var(--white); }
+  .summary-bar-title { font-size: 11px; opacity: 0.7; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .summary-item { text-align: center; }
+  .summary-val { font-size: 18px; }
+  .summary-lbl { font-size: 10px; opacity: 0.65; margin-top: 2px; }
+
+  /* Round meta */
+  .meta-section { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .meta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Gear selector */
+  .gear-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .gear-opt { padding: 10px 4px; border: 0.5px solid var(--border); border-radius: var(--radius-sm); background: var(--gray); text-align: center; cursor: pointer; transition: all 0.15s; }
+  .gear-opt.active { background: var(--green-pale); border-color: var(--green-light); }
+  .gear-num { font-size: 18px; color: var(--text); }
+  .gear-desc { font-size: 9px; color: var(--text3); margin-top: 2px; letter-spacing: 0.03em; }
+  .gear-opt.active .gear-num { color: var(--green); }
+  .gear-opt.active .gear-desc { color: var(--green-mid); }
+
+  /* Confirm screen */
+  .confirm-wrap { padding: 16px 12px; }
+  .confirm-hero { background: var(--green); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; color: var(--white); text-align: center; }
+  .confirm-score { font-size: 48px; line-height: 1; }
+  .confirm-par { font-size: 14px; opacity: 0.7; margin-top: 4px; }
+  .confirm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .confirm-stat { background: var(--gray); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+  .confirm-stat-val { font-size: 22px; color: var(--text); }
+  .confirm-stat-lbl { font-size: 11px; color: var(--text3); margin-top: 2px; letter-spacing: 0.03em; }
+  .hole-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 3px; margin-bottom: 12px; }
+  .hole-pip { aspect-ratio: 1; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--text3); background: var(--gray); }
+  .hole-pip.both { background: var(--green-pale); color: var(--green); }
+  .hole-pip.one { background: var(--amber-pale); color: var(--amber); }
+  .hole-pip.none { background: var(--red-pale); color: var(--red); }
+
+  /* History */
+  .round-item { margin: 8px 12px; border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .round-header { padding: 12px 14px; cursor: pointer; }
+  .round-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .round-course { font-size: 15px; color: var(--text); }
+  .round-score-big { font-size: 24px; color: var(--text); }
+  .round-meta { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .round-stats { display: flex; gap: 12px; margin-top: 8px; }
+  .round-stat { font-size: 12px; color: var(--text2); }
+  .round-stat span { color: var(--green); font-size: 14px; }
+  .round-detail { padding: 12px 14px; border-top: 0.5px solid var(--border2); display: none; }
+  .round-detail.open { display: block; }
+  .detail-hole-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .detail-hole { background: var(--gray); border-radius: var(--radius-sm); padding: 8px; font-size: 11px; }
+  .detail-hole-num { color: var(--text3); margin-bottom: 4px; }
+  .detail-hole-score { font-size: 16px; color: var(--text); }
+  .detail-hole-checks { display: flex; gap: 3px; margin-top: 3px; }
+
+  /* Trends */
+  .trends-wrap { padding: 12px; }
+  .hero-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .hero-card { background: var(--green); border-radius: var(--radius); padding: 16px; color: var(--white); }
+  .hero-val { font-size: 32px; line-height: 1; }
+  .hero-lbl { font-size: 11px; opacity: 0.7; margin-top: 4px; letter-spacing: 0.04em; }
+  .hero-trend { font-size: 11px; margin-top: 6px; opacity: 0.85; }
+  .trend-card { background: var(--gray); border-radius: var(--radius); padding: 14px; margin-bottom: 8px; }
+  .trend-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .trend-title { font-size: 13px; color: var(--text2); }
+  .trend-arrow { font-size: 12px; }
+  .trend-arrow.up { color: var(--green); }
+  .trend-arrow.down { color: var(--red); }
+  .trend-arrow.flat { color: var(--text3); }
+  canvas { width: 100% !important; height: 80px !important; }
+  .range-control { display: flex; gap: 6px; margin-bottom: 12px; }
+  .range-btn { flex: 1; padding: 7px 4px; border: 0.5px solid var(--border); border-radius: var(--radius-sm); background: var(--gray); font-size: 12px; color: var(--text3); cursor: pointer; text-align: center; transition: all 0.15s; font-family: 'Georgia', serif; }
+  .range-btn.active { background: var(--green-pale); border-color: var(--green-light); color: var(--green); }
+
+  /* Course management */
+  .course-list { padding: 12px; }
+  .course-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--white); border: 0.5px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; }
+  .course-name { font-size: 14px; color: var(--text); }
+  .course-tee { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .course-actions { display: flex; gap: 6px; }
+
+  /* Course builder */
+  .course-builder { padding: 12px; }
+  .hole-par-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 0.5px solid var(--border2); }
+  .hole-par-label { font-size: 13px; color: var(--text2); }
+
+  /* Empty state */
+  .empty { padding: 48px 24px; text-align: center; color: var(--text3); font-size: 14px; }
+  .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+
+  /* Toast */
+  #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--white); padding: 10px 20px; border-radius: 20px; font-size: 13px; opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 100; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Loading */
+  .loading { padding: 32px; text-align: center; color: var(--text3); font-size: 13px; }
+
+  /* Course picker modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; }
+  .modal-sheet { background: var(--white); border-radius: 20px 20px 0 0; padding: 20px 16px 40px; max-height: 70vh; overflow-y: auto; }
+  .modal-title { font-size: 16px; margin-bottom: 14px; color: var(--text); }
+  .modal-item { padding: 12px 14px; border: 0.5px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer; }
+  .modal-item:active { background: var(--gray); }
+
+  /* Prox input */
+  .prox-input { width: 60px; padding: 6px 8px; border: 0.5px solid var(--border); border-radius: var(--radius-sm); background: var(--gray); color: var(--text); font-family: 'Georgia', serif; font-size: 14px; text-align: center; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="screen"></div>
+  <nav id="nav">
+    <button class="nav-btn active" onclick="showScreen('scorecard')" id="nav-scorecard">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+      Scorecard
+    </button>
+    <button class="nav-btn" onclick="showScreen('history')" id="nav-history">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+      History
+    </button>
+    <button class="nav-btn" onclick="showScreen('trends')" id="nav-trends">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Trends
+    </button>
+    <button class="nav-btn" onclick="showScreen('courses')" id="nav-courses">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Courses
+    </button>
+  </nav>
+</div>
+<div id="toast"></div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbwxbt8bUS-hjltZR88-owi9NsaGL3JD7bqoQIe0iy4chT6T3sBjVS0C4rmEQfz2ua7h/exec';
+const SECRET = 'KodakCanonCharlieCamille';
+const RULES = ['Penalty','Couldn\'t advance','Three-putt','Under-clubbed','Risky shot','Short-sided'];
+const GEAR_DESC = ['100 yds','50 yds','25 yds','Green'];
+const WEATHER_OPTS = ['Sunny','Cloudy','Windy','Rainy','Cold'];
+
+let currentScreen = 'scorecard';
+let trendRange = 5;
+
+const defaultHole = () => ({
+  par: 4, a: 0, aCheck: null, aRules: [],
+  b: 0, bCheck: null, bRules: [],
+  prox: '', putts4ft: 0, putts: 0
+});
+
+let round = loadRound();
+let courses = loadCourses();
+let openHoles = new Set();
+let openRounds = new Set();
+let editingCourse = null;
+
+function loadRound() {
+  try { const r = localStorage.getItem('ww_round'); return r ? JSON.parse(r) : freshRound(); } catch(e) { return freshRound(); }
+}
+function freshRound() {
+  return { id: Date.now().toString(), date: today(), courseId: null, courseName: '', tee: '', gear: null, weather: '', cart: false, competition: false, holes: Array.from({length:18}, defaultHole) };
+}
+function saveRoundLocal() { try { localStorage.setItem('ww_round', JSON.stringify(round)); } catch(e) {} }
+function loadCourses() { try { const c = localStorage.getItem('ww_courses'); return c ? JSON.parse(c) : []; } catch(e) { return []; } }
+function saveCoursesLocal() { try { localStorage.setItem('ww_courses', JSON.stringify(courses)); } catch(e) {} }
+function today() { return new Date().toISOString().split('T')[0]; }
+
+async function apiGet(type) {
+  const r = await fetch(`${API_URL}?type=${type}&secret=${SECRET}`);
+  return r.json();
+}
+async function apiPost(type, payload) {
+  const r = await fetch(API_URL, { method:'POST', body: JSON.stringify({type, payload, secret: SECRET}) });
+  return r.json();
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function showScreen(name) {
+  currentScreen = name;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-'+name).classList.add('active');
+  render();
+}
+
+function render() {
+  const s = document.getElementById('screen');
+  if (currentScreen === 'scorecard') s.innerHTML = renderScorecard();
+  else if (currentScreen === 'history') { s.innerHTML = renderHistory(); loadHistory(); }
+  else if (currentScreen === 'trends') { s.innerHTML = renderTrends(); loadTrends(); }
+  else if (currentScreen === 'courses') s.innerHTML = renderCourses();
+  else if (currentScreen === 'confirm') s.innerHTML = renderConfirm();
+  else if (currentScreen === 'course-builder') s.innerHTML = renderCourseBuilder();
+}
+
+/* ── SCORECARD ── */
+function renderScorecard() {
+  const out = round.holes.slice(0,9);
+  const inn = round.holes.slice(9,18);
+  const totalScore = round.holes.reduce((t,h) => t+(h.a||0)+(h.b||0), 0);
+  const totalPar = round.holes.reduce((t,h) => t+(h.par||4), 0);
+  const aChecks = round.holes.filter(h => h.aCheck===true).length;
+  const bChecks = round.holes.filter(h => h.bCheck===true).length;
+  const totalPutts = round.holes.reduce((t,h) => t+(h.putts||0), 0);
+
+  return `
+  <div class="screen-header">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div class="screen-title">${round.courseName || 'New round'}</div>
+        <div class="screen-sub">${round.date}${round.tee ? ' · '+round.tee : ''}${round.gear ? ' · Gear '+round.gear : ''}</div>
+      </div>
+      <button class="btn btn-sm btn-secondary" onclick="showMeta()">Edit</button>
+    </div>
+  </div>
+  ${!round.courseName ? `<div style="padding:12px"><button class="btn btn-primary btn-full" onclick="showMeta()">Set up round</button></div>` : ''}
+  <div style="padding:8px 12px 0">
+    <div class="summary-bar">
+      <div class="summary-bar-title">ROUND SUMMARY</div>
+      <div class="summary-grid">
+        <div class="summary-item"><div class="summary-val">${totalScore||'—'}</div><div class="summary-lbl">Score</div></div>
+        <div class="summary-item"><div class="summary-val">${aChecks}/18</div><div class="summary-lbl">Zone entry</div></div>
+        <div class="summary-item"><div class="summary-val">${bChecks}/18</div><div class="summary-lbl">Down in zone</div></div>
+        <div class="summary-item"><div class="summary-val">${totalPutts||'—'}</div><div class="summary-lbl">Putts</div></div>
+      </div>
+    </div>
+  </div>
+  <div style="padding:8px 12px 4px;font-size:11px;color:var(--text3);letter-spacing:0.06em">FRONT 9</div>
+  ${out.map((_,i) => renderHoleCard(i)).join('')}
+  <div style="padding:8px 12px 4px;font-size:11px;color:var(--text3);letter-spacing:0.06em;margin-top:4px">BACK 9</div>
+  ${inn.map((_,i) => renderHoleCard(i+9)).join('')}
+  <div style="padding:12px">
+    <button class="btn btn-primary btn-full" onclick="goConfirm()" style="margin-bottom:8px">Save round</button>
+    <button class="btn btn-danger btn-full btn-sm" onclick="confirmReset()">Reset round</button>
+  </div>`;
+}
+
+function renderHoleCard(i) {
+  const h = round.holes[i];
+  const score = (h.a||0)+(h.b||0);
+  const isOpen = openHoles.has(i);
+  return `<div class="hole-card">
+    <div class="hole-header" onclick="toggleHole(${i})">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="hole-num-label">Hole ${i+1} <span style="font-size:11px;color:var(--text3)">Par ${h.par}</span></div>
+        <div class="hole-checks">
+          <div class="mini-check ${h.aCheck===true?'yes':h.aCheck===false?'no':'none'}">${h.aCheck===true?'✓':h.aCheck===false?'✗':'·'}</div>
+          <div class="mini-check ${h.bCheck===true?'yes':h.bCheck===false?'no':'none'}">${h.bCheck===true?'✓':h.bCheck===false?'✗':'·'}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="hole-score-badge">${score||'—'}</div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" style="transform:rotate(${isOpen?180:0}deg);transition:transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+    <div class="hole-body ${isOpen?'open':''}">
+      <div class="row-group">
+        <div class="row-label">PAR</div>
+        <div class="par-sel">
+          ${[3,4,5].map(p=>`<div class="par-opt ${h.par===p?'active':''}" onclick="setPar(${i},${p})">${p}</div>`).join('')}
+        </div>
+      </div>
+      <div class="divider-line"></div>
+      <div class="row-group">
+        <div class="row-label">A — ENTER SCORING ZONE</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="stepper">
+            <button class="step-btn" onclick="setA(${i},${(h.a||0)-1})">−</button>
+            <span class="step-val">${h.a||'—'}</span>
+            <button class="step-btn" onclick="setA(${i},${(h.a||0)+1})">+</button>
+          </div>
+          <div class="check-toggle">
+            <div class="check-opt ${h.aCheck===true?'yes':''}" onclick="toggleCheck(${i},'a',true)">✓</div>
+            <div class="check-opt ${h.aCheck===false?'no':''}" onclick="toggleCheck(${i},'a',false)">✗</div>
+          </div>
+        </div>
+        ${h.aCheck===false ? `<div class="rule-tags">${RULES.map(r=>`<div class="rule-tag ${h.aRules.includes(r)?'active':''}" onclick="toggleRule(${i},'a','${r}')">${r}</div>`).join('')}</div>` : ''}
+      </div>
+      <div class="row-group">
+        <div class="row-label">B — DOWN IN ZONE</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="stepper">
+            <button class="step-btn" onclick="setB(${i},${(h.b||0)-1})">−</button>
+            <span class="step-val">${h.b||'—'}</span>
+            <button class="step-btn" onclick="setB(${i},${(h.b||0)+1})">+</button>
+          </div>
+          <div class="check-toggle">
+            <div class="check-opt ${h.bCheck===true?'yes':''}" onclick="toggleCheck(${i},'b',true)">✓</div>
+            <div class="check-opt ${h.bCheck===false?'no':''}" onclick="toggleCheck(${i},'b',false)">✗</div>
+          </div>
+        </div>
+        ${h.bCheck===false ? `<div class="rule-tags">${RULES.map(r=>`<div class="rule-tag ${h.bRules.includes(r)?'active':''}" onclick="toggleRule(${i},'b','${r}')">${r}</div>`).join('')}</div>` : ''}
+      </div>
+      <div class="divider-line"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;color:var(--text2)">C — Score (A+B)</div>
+        <div style="font-size:20px;color:var(--text)">${score||'—'}</div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">PUTTS MADE +4FT / PROX (ft)</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="stepper">
+            <button class="step-btn" onclick="setPutts4ft(${i},${(h.putts4ft||0)-1})">−</button>
+            <span class="step-val">${h.putts4ft||'—'}</span>
+            <button class="step-btn" onclick="setPutts4ft(${i},${(h.putts4ft||0)+1})">+</button>
+          </div>
+          <span style="color:var(--text3)">/</span>
+          <input class="prox-input" type="number" placeholder="—" value="${h.prox||''}" onchange="setProx(${i},this.value)" inputmode="numeric">
+          <span style="font-size:12px;color:var(--text3)">ft</span>
+        </div>
+      </div>
+      <div class="row-group">
+        <div class="row-label">TOTAL PUTTS</div>
+        <div class="stepper">
+          <button class="step-btn" onclick="setPutts(${i},${(h.putts||0)-1})">−</button>
+          <span class="step-val">${h.putts||'—'}</span>
+          <button class="step-btn" onclick="setPutts(${i},${(h.putts||0)+1})">+</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleHole(i) {
+  if (openHoles.has(i)) openHoles.delete(i); else openHoles.add(i);
+  render();
+}
+function setPar(i,v) { round.holes[i].par=v; saveRoundLocal(); render(); }
+function setA(i,v) { round.holes[i].a=Math.max(0,v); saveRoundLocal(); render(); }
+function setB(i,v) { round.holes[i].b=Math.max(0,v); saveRoundLocal(); render(); }
+function setPutts4ft(i,v) { round.holes[i].putts4ft=Math.max(0,v); saveRoundLocal(); render(); }
+function setPutts(i,v) { round.holes[i].putts=Math.max(0,v); saveRoundLocal(); render(); }
+function setProx(i,v) { round.holes[i].prox=v; saveRoundLocal(); }
+function toggleCheck(i,row,val) {
+  const cur = round.holes[i][row+'Check'];
+  round.holes[i][row+'Check'] = cur===val ? null : val;
+  if (round.holes[i][row+'Check'] !== false) round.holes[i][row+'Rules'] = [];
+  saveRoundLocal(); render();
+}
+function toggleRule(i,row,rule) {
+  const rules = round.holes[i][row+'Rules'];
+  const idx = rules.indexOf(rule);
+  if (idx>-1) rules.splice(idx,1); else rules.push(rule);
+  saveRoundLocal(); render();
+}
+
+/* Meta modal */
+function showMeta() {
+  const courseOpts = courses.map(c=>`<option value="${c.id}" ${round.courseId===c.id?'selected':''}>${c.name} (${c.tee})</option>`).join('');
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'meta-modal';
+  modal.innerHTML = `<div class="modal-sheet">
+    <div class="modal-title">Round details</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div class="field-label">DATE</div>
+        <input type="date" id="m-date" value="${round.date}">
+      </div>
+      <div>
+        <div class="field-label">COURSE</div>
+        <select id="m-course" onchange="updateCourseMeta()">
+          <option value="">Select course</option>
+          ${courseOpts}
+        </select>
+      </div>
+      <div>
+        <div class="field-label">GEAR</div>
+        <div class="gear-grid">
+          ${[1,2,3,4].map(g=>`<div class="gear-opt ${round.gear===g?'active':''}" onclick="setGear(${g})">
+            <div class="gear-num">${g}</div>
+            <div class="gear-desc">${GEAR_DESC[g-1]}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="meta-row">
+        <div>
+          <div class="field-label">WEATHER</div>
+          <select id="m-weather">
+            <option value="">Select</option>
+            ${WEATHER_OPTS.map(w=>`<option ${round.weather===w?'selected':''}>${w}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div class="field-label">FORMAT</div>
+          <div class="seg" style="margin-top:0">
+            <button class="seg-btn ${!round.competition?'active':''}" onclick="setComp(false)">Casual</button>
+            <button class="seg-btn ${round.competition?'active':''}" onclick="setComp(true)">Competition</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="field-label">RIDE / WALK</div>
+        <div class="seg">
+          <button class="seg-btn ${round.cart?'active':''}" onclick="setCart(true)">Cart</button>
+          <button class="seg-btn ${!round.cart?'active':''}" onclick="setCart(false)">Walking</button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveMeta()" style="margin-top:4px">Done</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) closeMeta(); });
+}
+function setGear(g) { round.gear=g; saveRoundLocal(); document.querySelectorAll('.gear-opt').forEach((el,i)=>el.classList.toggle('active',i+1===g)); }
+function setComp(v) { round.competition=v; saveRoundLocal(); document.querySelectorAll('#meta-modal .seg-btn').forEach((el,i)=>{ if(i<2) el.classList.toggle('active', v?(i===1):(i===0)); }); }
+function setCart(v) { round.cart=v; saveRoundLocal(); }
+function updateCourseMeta() {
+  const id = document.getElementById('m-course').value;
+  const c = courses.find(x=>x.id===id);
+  if(c) { round.courseId=c.id; round.courseName=c.name; round.tee=c.tee; c.pars.forEach((p,i)=>{ round.holes[i].par=p; }); saveRoundLocal(); }
+}
+function saveMeta() {
+  round.date = document.getElementById('m-date').value;
+  round.weather = document.getElementById('m-weather').value;
+  saveRoundLocal(); closeMeta(); render();
+}
+function closeMeta() { const m=document.getElementById('meta-modal'); if(m) m.remove(); }
+
+/* Confirm */
+function goConfirm() { currentScreen='confirm'; document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); render(); }
+function renderConfirm() {
+  const score = round.holes.reduce((t,h)=>t+(h.a||0)+(h.b||0),0);
+  const par = round.holes.reduce((t,h)=>t+(h.par||4),0);
+  const diff = score-par;
+  const aChecks = round.holes.filter(h=>h.aCheck===true).length;
+  const bChecks = round.holes.filter(h=>h.bCheck===true).length;
+  const putts = round.holes.reduce((t,h)=>t+(h.putts||0),0);
+  const zonePct = Math.round(aChecks/18*100);
+  const downPct = Math.round(bChecks/18*100);
+  const pips = round.holes.map((h,i)=>{
+    const cls = h.aCheck&&h.bCheck?'both':h.aCheck||h.bCheck?'one':'none';
+    return `<div class="hole-pip ${cls}">${i+1}</div>`;
+  }).join('');
+  return `
+  <div class="screen-header">
+    <div class="screen-title">Save round</div>
+    <div class="screen-sub">Review before saving</div>
+  </div>
+  <div class="confirm-wrap">
+    <div class="confirm-hero">
+      <div class="confirm-score">${score||'—'}</div>
+      <div class="confirm-par">${diff===0?'Even par':diff>0?'+'+diff:diff} · Par ${par}</div>
+      <div style="font-size:13px;opacity:0.7;margin-top:6px">${round.courseName||'Unknown course'} · ${round.date}</div>
+    </div>
+    <div class="confirm-stats">
+      <div class="confirm-stat"><div class="confirm-stat-val">${zonePct}%</div><div class="confirm-stat-lbl">Zone entry rate</div></div>
+      <div class="confirm-stat"><div class="confirm-stat-val">${downPct}%</div><div class="confirm-stat-lbl">Down in zone</div></div>
+      <div class="confirm-stat"><div class="confirm-stat-val">${putts||'—'}</div><div class="confirm-stat-lbl">Total putts</div></div>
+      <div class="confirm-stat"><div class="confirm-stat-val">G${round.gear||'—'}</div><div class="confirm-stat-lbl">Gear</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);letter-spacing:0.06em;margin-bottom:6px">HOLE BREAKDOWN</div>
+    <div class="hole-grid">${pips}</div>
+    <div style="display:flex;gap:12px;font-size:11px;color:var(--text3);margin-bottom:16px">
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:var(--green-pale);display:inline-block"></span>Both ✓</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:var(--amber-pale);display:inline-block"></span>One ✓</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:var(--red-pale);display:inline-block"></span>Neither</span>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveRoundToSheets()" style="margin-bottom:8px">Save to Google Sheets</button>
+    <button class="btn btn-secondary btn-full btn-sm" onclick="showScreen('scorecard')">Back to scorecard</button>
+  </div>`;
+}
+
+async function saveRoundToSheets() {
+  const score = round.holes.reduce((t,h)=>t+(h.a||0)+(h.b||0),0);
+  const par = round.holes.reduce((t,h)=>t+(h.par||4),0);
+  const aChecks = round.holes.filter(h=>h.aCheck===true).length;
+  const bChecks = round.holes.filter(h=>h.bCheck===true).length;
+  const putts = round.holes.reduce((t,h)=>t+(h.putts||0),0);
+  const putts4ft = round.holes.reduce((t,h)=>t+(h.putts4ft||0),0);
+  const payload = { ...round, score, par, zonePct: Math.round(aChecks/18*100), downPct: Math.round(bChecks/18*100), puttsPerRound: putts, putts4ftMade: putts4ft };
+  try {
+    toast('Saving...');
+    const res = await apiPost('round', payload);
+    if(res.success) {
+      toast('Round saved!');
+      round = freshRound();
+      saveRoundLocal();
+      openHoles.clear();
+      setTimeout(()=>showScreen('history'), 1000);
+    } else { toast('Error — check connection'); }
+  } catch(e) { toast('Offline — saved locally only'); }
+}
+
+function confirmReset() {
+  if(confirm('Reset this round? All data will be lost.')) {
+    round = freshRound(); saveRoundLocal(); openHoles.clear(); render();
+  }
+}
+
+/* ── HISTORY ── */
+function renderHistory() {
+  return `<div class="screen-header"><div class="screen-title">History</div><div class="screen-sub">Past rounds</div></div>
+  <div id="history-list"><div class="loading">Loading...</div></div>`;
+}
+async function loadHistory() {
+  try {
+    const rounds = await apiGet('rounds');
+    const el = document.getElementById('history-list');
+    if(!el) return;
+    if(!rounds.length) { el.innerHTML='<div class="empty"><div class="empty-icon">○</div>No rounds saved yet</div>'; return; }
+    el.innerHTML = rounds.map(r => renderRoundItem(r)).join('');
+  } catch(e) { const el=document.getElementById('history-list'); if(el) el.innerHTML='<div class="empty">Could not load — check connection</div>'; }
+}
+function renderRoundItem(r) {
+  const diff = (r.score||0)-(r.par||72);
+  const diffStr = diff===0?'E':diff>0?'+'+diff:''+diff;
+  const isOpen = openRounds.has(r.id);
+  let detail = '';
+  if(isOpen && r.holes) {
+    detail = `<div class="round-detail open">
+      <div class="detail-hole-grid">
+        ${r.holes.map((h,i)=>{
+          const s=(h.a||0)+(h.b||0);
+          return `<div class="detail-hole">
+            <div class="detail-hole-num">Hole ${i+1} · Par ${h.par}</div>
+            <div class="detail-hole-score">${s||'—'}</div>
+            <div class="detail-hole-checks">
+              <div class="mini-check ${h.aCheck===true?'yes':h.aCheck===false?'no':'none'}" style="width:14px;height:14px;font-size:8px">${h.aCheck===true?'✓':h.aCheck===false?'✗':'·'}</div>
+              <div class="mini-check ${h.bCheck===true?'yes':h.bCheck===false?'no':'none'}" style="width:14px;height:14px;font-size:8px">${h.bCheck===true?'✓':h.bCheck===false?'✗':'·'}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+  return `<div class="round-item">
+    <div class="round-header" onclick="toggleRound('${r.id}')">
+      <div class="round-top">
+        <div><div class="round-course">${r.courseName||'Unknown'}</div><div class="round-meta">${r.date}${r.tee?' · '+r.tee:''}${r.gear?' · G'+r.gear:''}</div></div>
+        <div class="round-score-big">${r.score||'—'} <span style="font-size:14px;color:var(--text3)">(${diffStr})</span></div>
+      </div>
+      <div class="round-stats">
+        <div class="round-stat">Zone <span>${r.zonePct||0}%</span></div>
+        <div class="round-stat">Down <span>${r.downPct||0}%</span></div>
+        <div class="round-stat">Putts <span>${r.puttsPerRound||'—'}</span></div>
+      </div>
+    </div>
+    ${detail}
+  </div>`;
+}
+function toggleRound(id) {
+  if(openRounds.has(id)) openRounds.delete(id); else openRounds.add(id);
+  loadHistory();
+}
+
+/* ── TRENDS ── */
+function renderTrends() {
+  return `<div class="screen-header"><div class="screen-title">Trends</div><div class="screen-sub">Last ${trendRange} rounds</div></div>
+  <div class="trends-wrap">
+    <div class="range-control">
+      ${[3,5,10,20].map(n=>`<button class="range-btn ${trendRange===n?'active':''}" onclick="setRange(${n})">${n}</button>`).join('')}
+    </div>
+    <div id="trends-content"><div class="loading">Loading...</div></div>
+  </div>`;
+}
+function setRange(n) { trendRange=n; render(); loadTrends(); }
+async function loadTrends() {
+  try {
+    const all = await apiGet('rounds');
+    const el = document.getElementById('trends-content');
+    if(!el) return;
+    const rounds = all.slice(0, trendRange).reverse();
+    if(rounds.length < 2) { el.innerHTML='<div class="empty">Need at least 2 rounds for trends</div>'; return; }
+    const labels = rounds.map(r=>r.date.slice(5));
+    const zoneData = rounds.map(r=>r.zonePct||0);
+    const downData = rounds.map(r=>r.downPct||0);
+    const puttsData = rounds.map(r=>r.puttsPerRound||0);
+    const scoreData = rounds.map(r=>(r.score||0)-(r.par||72));
+    const lastZone = zoneData[zoneData.length-1];
+    const prevZone = zoneData[zoneData.length-2];
+    const lastPutts = puttsData[puttsData.length-1];
+    const prevPutts = puttsData[puttsData.length-2];
+    const trendDir = (cur,prev,higherBetter) => { if(cur>prev) return higherBetter?'up':'down'; if(cur<prev) return higherBetter?'down':'up'; return 'flat'; };
+    const trendArrow = (cur,prev,higherBetter) => { const d=trendDir(cur,prev,higherBetter); return `<span class="trend-arrow ${d}">${d==='up'?'↑':d==='down'?'↓':'→'}</span>`; };
+    el.innerHTML = `
+      <div class="hero-metrics">
+        <div class="hero-card">
+          <div class="hero-val">${lastZone}%</div>
+          <div class="hero-lbl">ZONE ENTRY RATE</div>
+          <div class="hero-trend">${trendArrow(lastZone,prevZone,true)} vs prev round</div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-val">${lastPutts||'—'}</div>
+          <div class="hero-lbl">PUTTS / ROUND</div>
+          <div class="hero-trend">${trendArrow(lastPutts,prevPutts,false)} vs prev round</div>
+        </div>
+      </div>
+      <div class="trend-card">
+        <div class="trend-header"><div class="trend-title">Down in zone %</div>${trendArrow(downData[downData.length-1],downData[downData.length-2],true)}</div>
+        <canvas id="chart-down"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-header"><div class="trend-title">Score vs par</div>${trendArrow(scoreData[scoreData.length-1],scoreData[scoreData.length-2],false)}</div>
+        <canvas id="chart-score"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-header"><div class="trend-title">Zone entry %</div>${trendArrow(lastZone,prevZone,true)}</div>
+        <canvas id="chart-zone"></canvas>
+      </div>`;
+    setTimeout(()=>{
+      drawChart('chart-zone', labels, zoneData, '#3B6B1F', true);
+      drawChart('chart-down', labels, downData, '#2D5016', true);
+      drawChart('chart-score', labels, scoreData, '#BA7517', false);
+    }, 50);
+  } catch(e) { const el=document.getElementById('trends-content'); if(el) el.innerHTML='<div class="empty">Could not load trends</div>'; }
+}
+
+function drawChart(id, labels, data, color, pct) {
+  const canvas = document.getElementById(id);
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth * window.devicePixelRatio;
+  const H = 80 * window.devicePixelRatio;
+  canvas.width = W; canvas.height = H;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const w = canvas.offsetWidth, h = 80;
+  const pad = {t:8,r:8,b:20,l:pct?32:28};
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max-min || 1;
+  const xScale = i => pad.l + (i/(data.length-1))*(w-pad.l-pad.r);
+  const yScale = v => pad.t + (1-(v-min)/range)*(h-pad.t-pad.b);
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath();
+  data.forEach((v,i) => { i===0 ? ctx.moveTo(xScale(i),yScale(v)) : ctx.lineTo(xScale(i),yScale(v)); });
+  ctx.stroke();
+  data.forEach((v,i) => {
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(xScale(i),yScale(v),3,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#5A5A56'; ctx.font = '9px Georgia'; ctx.textAlign = 'center';
+    ctx.fillText(pct?v+'%':v>0?'+'+v:v, xScale(i), yScale(v)-6);
+  });
+  labels.forEach((l,i) => {
+    ctx.fillStyle = '#9A9A94'; ctx.font = '9px Georgia'; ctx.textAlign = 'center';
+    ctx.fillText(l, xScale(i), h-4);
+  });
+}
+
+/* ── COURSES ── */
+function renderCourses() {
+  return `<div class="screen-header">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div><div class="screen-title">Courses</div><div class="screen-sub">${courses.length} saved</div></div>
+      <button class="btn btn-primary btn-sm" onclick="newCourse()">+ Add</button>
+    </div>
+  </div>
+  <div class="course-list">
+    ${courses.length ? courses.map(c=>`
+      <div class="course-item">
+        <div><div class="course-name">${c.name}</div><div class="course-tee">${c.tee} · Par ${c.pars.reduce((t,p)=>t+p,0)}</div></div>
+        <div class="course-actions">
+          <button class="btn btn-sm btn-secondary" onclick="editCourse('${c.id}')">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteCourse('${c.id}')">Del</button>
+        </div>
+      </div>`).join('') : '<div class="empty"><div class="empty-icon">⛳</div>No courses saved yet</div>'}
+  </div>`;
+}
+
+function newCourse() { editingCourse = { id: Date.now().toString(), name:'', tee:'', pars: Array(18).fill(4), createdAt: new Date().toISOString() }; currentScreen='course-builder'; render(); }
+function editCourse(id) { editingCourse = JSON.parse(JSON.stringify(courses.find(c=>c.id===id))); currentScreen='course-builder'; render(); }
+function deleteCourse(id) {
+  if(confirm('Delete this course?')) { courses = courses.filter(c=>c.id!==id); saveCoursesLocal(); render(); }
+}
+
+function renderCourseBuilder() {
+  const c = editingCourse;
+  return `<div class="screen-header">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="screen-title">${c.name||'New course'}</div>
+      <button class="btn btn-sm btn-secondary" onclick="showScreen('courses')">Cancel</button>
+    </div>
+  </div>
+  <div class="course-builder">
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+      <div><div class="field-label">COURSE NAME</div><input type="text" placeholder="e.g. Summerby Golf Club" value="${c.name}" oninput="editingCourse.name=this.value"></div>
+      <div><div class="field-label">TEE</div><input type="text" placeholder="e.g. White, Tips, Red" value="${c.tee}" oninput="editingCourse.tee=this.value"></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);letter-spacing:0.06em;margin-bottom:8px">HOLE PARS</div>
+    <div style="margin-bottom:8px;font-size:11px;color:var(--text3)">Front 9</div>
+    ${[0,1,2,3,4,5,6,7,8].map(i=>holeParRow(i)).join('')}
+    <div style="margin:12px 0 8px;font-size:11px;color:var(--text3)">Back 9</div>
+    ${[9,10,11,12,13,14,15,16,17].map(i=>holeParRow(i)).join('')}
+    <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-primary btn-full" onclick="saveCourse()">Save course</button>
+    </div>
+  </div>`;
+}
+function holeParRow(i) {
+  const p = editingCourse.pars[i];
+  return `<div class="hole-par-row">
+    <div class="hole-par-label">Hole ${i+1}</div>
+    <div class="par-sel">
+      ${[3,4,5].map(v=>`<div class="par-opt ${p===v?'active':''}" onclick="setCourseHolePar(${i},${v})">${v}</div>`).join('')}
+    </div>
+  </div>`;
+}
+function setCourseHolePar(i,v) { editingCourse.pars[i]=v; render(); }
+async function saveCourse() {
+  if(!editingCourse.name) { toast('Enter a course name'); return; }
+  const idx = courses.findIndex(c=>c.id===editingCourse.id);
+  if(idx>-1) courses[idx]=editingCourse; else courses.push(editingCourse);
+  saveCoursesLocal();
+  try { await apiPost('course', editingCourse); toast('Course saved!'); } catch(e) { toast('Saved locally — sync when online'); }
+  showScreen('courses');
+}
+
+render();
+</script>
+</body>
+</html>
