@@ -695,10 +695,16 @@ async function loadTrends() {
     const downData = rounds.map(r=>r.downPct||0);
     const puttsData = rounds.map(r=>r.puttsPerRound||0);
     const scoreData = rounds.map(r=>(r.score||0)-(r.par||72));
+    const threePuttData = rounds.map(r=>{
+      const holes = Array.isArray(r.holes) ? r.holes : [];
+      return holes.filter(h=>(h.putts||0)>=3).length;
+    });
     const lastZone = zoneData[zoneData.length-1];
     const prevZone = zoneData[zoneData.length-2];
     const lastPutts = puttsData[puttsData.length-1];
     const prevPutts = puttsData[puttsData.length-2];
+    const lastThree = threePuttData[threePuttData.length-1];
+    const prevThree = threePuttData[threePuttData.length-2];
     const trendDir = (cur,prev,higherBetter) => { if(cur>prev) return higherBetter?'up':'down'; if(cur<prev) return higherBetter?'down':'up'; return 'flat'; };
     const trendArrow = (cur,prev,higherBetter) => { const d=trendDir(cur,prev,higherBetter); return `<span class="trend-arrow ${d}">${d==='up'?'↑':d==='down'?'↓':'→'}</span>`; };
     el.innerHTML = `
@@ -715,20 +721,30 @@ async function loadTrends() {
         </div>
       </div>
       <div class="trend-card">
+        <div class="trend-header"><div class="trend-title">Zone entry %</div>${trendArrow(lastZone,prevZone,true)}</div>
+        <canvas id="chart-zone"></canvas>
+      </div>
+      <div class="trend-card">
         <div class="trend-header"><div class="trend-title">Down in zone %</div>${trendArrow(downData[downData.length-1],downData[downData.length-2],true)}</div>
         <canvas id="chart-down"></canvas>
       </div>
       <div class="trend-card">
-        <div class="trend-header"><div class="trend-title">Score vs par</div>${trendArrow(scoreData[scoreData.length-1],scoreData[scoreData.length-2],false)}</div>
-        <canvas id="chart-score"></canvas>
+        <div class="trend-header"><div class="trend-title">Total putts</div>${trendArrow(lastPutts,prevPutts,false)}</div>
+        <canvas id="chart-putts"></canvas>
       </div>
       <div class="trend-card">
-        <div class="trend-header"><div class="trend-title">Zone entry %</div>${trendArrow(lastZone,prevZone,true)}</div>
-        <canvas id="chart-zone"></canvas>
+        <div class="trend-header"><div class="trend-title">3-putts per round</div>${trendArrow(lastThree,prevThree,false)}</div>
+        <canvas id="chart-3putt"></canvas>
+      </div>
+      <div class="trend-card">
+        <div class="trend-header"><div class="trend-title">Score vs par</div>${trendArrow(scoreData[scoreData.length-1],scoreData[scoreData.length-2],false)}</div>
+        <canvas id="chart-score"></canvas>
       </div>`;
     setTimeout(()=>{
       drawChart('chart-zone', labels, zoneData, '#3B6B1F', true);
       drawChart('chart-down', labels, downData, '#2D5016', true);
+      drawChart('chart-putts', labels, puttsData, '#534AB7', false);
+      drawChart('chart-3putt', labels, threePuttData, '#A32D2D', false);
       drawChart('chart-score', labels, scoreData, '#BA7517', false);
     }, 50);
   } catch(e) { const el=document.getElementById('trends-content'); if(el) el.innerHTML='<div class="empty">Could not load trends</div>'; }
@@ -832,6 +848,19 @@ async function saveCourse() {
 }
 
 render();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      newSW.addEventListener('statechange', () => {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          toast('Update available — close and reopen to refresh');
+        }
+      });
+    });
+  });
+}
 </script>
 </body>
 </html>
