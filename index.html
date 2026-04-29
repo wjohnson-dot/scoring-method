@@ -283,7 +283,8 @@ async function apiGet(type) {
   return r.json();
 }
 async function apiPost(type, payload) {
-  const r = await fetch(API_URL, { method:'POST', body: JSON.stringify({type, payload, secret: SECRET}) });
+  const params = new URLSearchParams({ type, secret: SECRET, data: JSON.stringify(payload) });
+  const r = await fetch(`${API_URL}?${params}`);
   return r.json();
 }
 
@@ -444,8 +445,17 @@ function toggleHole(i) {
   render();
 }
 function setPar(i,v) { round.holes[i].par=v; saveRoundLocal(); render(); }
-function setA(i,v) { round.holes[i].a=Math.max(0,v); saveRoundLocal(); render(); }
-function setB(i,v) { round.holes[i].b=Math.max(0,v); saveRoundLocal(); render(); }
+function aThreshold(par) { return par===3?1:par===5?3:2; }
+function setA(i,v) {
+  const h=round.holes[i]; h.a=Math.max(0,v);
+  if(h.a>0) { h.aCheck = h.a<=aThreshold(h.par); if(h.aCheck) h.aRules=[]; }
+  saveRoundLocal(); render();
+}
+function setB(i,v) {
+  const h=round.holes[i]; h.b=Math.max(0,v);
+  if(h.b>0) { h.bCheck = h.b<=3; if(h.bCheck) h.bRules=[]; }
+  saveRoundLocal(); render();
+}
 function setPutts4ft(i,v) { round.holes[i].putts4ft=Math.max(0,v); saveRoundLocal(); render(); }
 function setPutts(i,v) { round.holes[i].putts=Math.max(0,v); saveRoundLocal(); render(); }
 function setProx(i,v) { round.holes[i].prox=v; saveRoundLocal(); }
@@ -468,7 +478,7 @@ function showMeta() {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'meta-modal';
-  modal.innerHTML = `<div class="modal-sheet">
+  modal.innerHTML = `<div class="modal-sheet" onclick="event.stopPropagation()">
     <div class="modal-title">Round details</div>
     <div style="display:flex;flex-direction:column;gap:10px">
       <div>
