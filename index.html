@@ -512,16 +512,16 @@ function showMeta() {
         <div>
           <div class="field-label">FORMAT</div>
           <div class="seg" style="margin-top:0">
-            <button class="seg-btn ${!round.competition?'active':''}" onclick="setComp(false)">Casual</button>
-            <button class="seg-btn ${round.competition?'active':''}" onclick="setComp(true)">Competition</button>
+            <button id="comp-casual" class="seg-btn ${!round.competition?'active':''}" onclick="setComp(false)">Casual</button>
+            <button id="comp-comp" class="seg-btn ${round.competition?'active':''}" onclick="setComp(true)">Competition</button>
           </div>
         </div>
       </div>
       <div>
         <div class="field-label">RIDE / WALK</div>
         <div class="seg">
-          <button class="seg-btn ${round.cart?'active':''}" onclick="setCart(true)">Cart</button>
-          <button class="seg-btn ${!round.cart?'active':''}" onclick="setCart(false)">Walking</button>
+          <button id="cart-yes" class="seg-btn ${round.cart?'active':''}" onclick="setCart(true)">Cart</button>
+          <button id="cart-no" class="seg-btn ${!round.cart?'active':''}" onclick="setCart(false)">Walking</button>
         </div>
       </div>
       <button class="btn btn-primary btn-full" onclick="saveMeta()" style="margin-top:4px">Done</button>
@@ -531,8 +531,8 @@ function showMeta() {
   modal.addEventListener('click', e => { if(e.target===modal) closeMeta(); });
 }
 function setGear(g) { round.gear=g; saveRoundLocal(); document.querySelectorAll('.gear-opt').forEach((el,i)=>el.classList.toggle('active',i+1===g)); }
-function setComp(v) { round.competition=v; saveRoundLocal(); document.querySelectorAll('#meta-modal .seg-btn').forEach((el,i)=>{ if(i<2) el.classList.toggle('active', v?(i===1):(i===0)); }); }
-function setCart(v) { round.cart=v; saveRoundLocal(); }
+function setComp(v) { round.competition=v; saveRoundLocal(); document.getElementById('comp-casual').classList.toggle('active',!v); document.getElementById('comp-comp').classList.toggle('active',v); }
+function setCart(v) { round.cart=v; saveRoundLocal(); document.getElementById('cart-yes').classList.toggle('active',v); document.getElementById('cart-no').classList.toggle('active',!v); }
 function updateCourseMeta() {
   const id = document.getElementById('m-course').value;
   const c = courses.find(x=>x.id===id);
